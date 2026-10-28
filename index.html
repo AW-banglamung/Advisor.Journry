@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advisor Journey</title>
+<style>
+:root{--bg:#faf6ef;--card:#fff;--ink:#1c2433;--mute:#5d6678;--navy:#1f3358;--red:#9b2c2c;--gold:#b8892b;--line:#e4dccb;--ok:#2f7d4f;--warn:#c2410c;--soft:#f3ece0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.6 'Noto Sans Thai','Sarabun',Tahoma,system-ui,sans-serif}
+header{background:var(--navy);color:#fff;padding:16px 20px;border-bottom:5px solid var(--gold)}
+header h1{margin:0;font-size:24px}header small{opacity:.85;font-size:16px}
+main{max-width:920px;margin:0 auto;padding:16px}
+nav{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+button{font:inherit;font-weight:600;border:2px solid var(--navy);background:var(--card);color:var(--navy);padding:10px 18px;border-radius:12px;cursor:pointer;min-height:48px}
+button.pri{background:var(--red);border-color:var(--red);color:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.card h2,.card h3{margin:0 0 8px;color:var(--navy)}
+.unit{border-left:6px solid var(--gold);cursor:pointer}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.bar{height:14px;background:var(--soft);border-radius:8px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--ok)}
+.tag{display:inline-block;padding:2px 12px;border-radius:20px;font-size:16px;font-weight:600}
+.ok{background:#dcefe3;color:#1d5a37}.late{background:#fbdcd0;color:#9a3412}.wait{background:var(--soft);color:var(--mute)}
+.alert{border:2px solid var(--warn);background:#fff4ec;color:#7c2d0e;border-radius:14px;padding:12px 16px;margin:0 0 14px}
+.mute{color:var(--mute);font-size:16px}
+label{display:block;font-weight:600;margin:10px 0 2px}
+input{font:inherit;width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.item{display:flex;gap:12px;align-items:flex-start;padding:10px 6px;border-top:1px solid var(--line);cursor:pointer;font-weight:400}
+.item input{width:30px;height:30px;flex:none;margin-top:3px;accent-color:var(--ok)}
+.req{color:var(--red);font-weight:700}
+.sth{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.rank{border-top:6px solid var(--gold)}
+dialog{border:none;border-radius:16px;max-width:520px;width:94%;background:var(--bg);color:var(--ink);padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+details summary{cursor:pointer;font-weight:600}
+</style></head><body>
+<header><h1>Advisor Journey</h1><small>Active Wealth · ติดตามเส้นทางตัวแทนใหม่ AIA</small></header>
+<main><div id="app">กำลังโหลด…</div></main>
+<dialog id="dlg"></dialog>
+<script>
+/* ===== ตั้งค่า: วางลิงก์ Web App ของ Apps Script ที่นี่ ===== */
+const API="https://script.google.com/macros/s/AKfycbw2VBerM0W100CWkWbqLgDKUSyBzVc4y3o9oN6hVBIfWxa54FKQ09vSMZ3mG9RMqg0v/exec";
+const UNITS=["Active Wealth","Active Wealth 1","Active Wealth 2"];
+const STEPS=[
+["ช่วงเริ่มต้นสนใจ",30,["*สัมภาษณ์เบื้องต้นกับผู้บริหารหน่วย","*กรอกข้อมูล iRecruit","*ทำแบบทดสอบ CAT","ทำแบบสำรวจ Lifestyle Survey","*เข้าฟังสัมมนา โอกาสทางธุรกิจ BOP"]],
+["เตรียมสอบ+อบรม ก่อนออกรหัส",44,["สัมภาษณ์คัดเลือก Formal Interview","*ลงทะเบียน OiC e-Licensing","*อบรม iPass 30 นาที","*อบรม CCA/MCG 30 นาที","ติวสอบ 120 นาที","คลังข้อสอบ (จำลองการสอบ)","*Youtube ติวสอบ"]],
+["ขั้นตอนการอบรมและสอบใบอนุญาต",58,["*อบรมขอรับใบอนุญาต (ขต.0)","MS Team / Classroom AIA","อบรมกับ Tii","*สอบ TLAA/Tii","รับชุดขึ้นทะเบียนใบอนุญาต"]],
+["เตรียมความรู้ เตรียมลูกค้าก่อนออกรหัส (Starter #1)",72,["*ST 101 แนะนำองค์กร, Set Goal, Market Survey 20 ใบ, Project 100","*ST 102 ขั้นตอนการทำงาน, FHC 5 ชุด","*ST 103 แบบประกันหลัก","*ST 104 สัญญาเพิ่มเติมสุขภาพ","*ST 105 สัญญาเพิ่มเติมโรคร้ายแรง","ST 106 อุบัติเหตุ+ยกเว้นเบี้ย"]],
+["สมัครสมาชิก 1,500 บาท/ปี",79,["นามบัตร Active Wealth 1 กล่อง","สิทธิการเป็นสมาชิก MD CLUB","ได้เข้ารับบริการ MD CLUB / ACTIVE CLUB"]],
+["หลังได้รับรหัสตัวแทน และรหัสผ่าน",86,["*เข้าเว็บ AIA.co.th ตั้งรหัสผ่านใหม่","*ลงทะเบียน Imo smart (LINE)","*ลงทะเบียน+เรียน 3 วิชา ใน iAcademy","3.1 Non-Med (10E)","3.2 Anti Money (5E9)","3.3 MPCI (5E8)","3.4 Medical PPR (5EX)"]],
+["เตรียมเริ่มต้นการขาย 10 DAY 1 APP (Starter #2)",93,["*ST 201 AIA ONE, Imo Smart, FNA","*ST 202 iSAY Application, Uneed, I pos+","*วางแผนประกันตัวเอง","ประกันกลุ่ม ธุรกิจองค์กร"]],
+["ฝึกภาคสนาม JOIN Fieldwork",107,["นัดเข้าพบรายที่ 1","นัดเข้าพบรายที่ 2","นัดเข้าพบรายที่ 3"]],
+["FUFT เดือนที่ 1 iAcademy",135,["*Goal Setting Month 1","*SB","*PASS 2 PLUS","*FUFT Week 1: 1EK 20PLN, 2E3 CIP, 2E4 AHC, 2E5 WP","5EF ทบทวน MPCI","FUFT Week 2: 1E2, 1ED, 2E7, *3ED Health Happy","FUFT Week 2: 3EC, *1E1, *3EJ Excellent, 2E6","*FUFT Week 3: 2E1 Accident, 1EL, 3EM isign","วิชาการ MD CLUB"]],
+["FUFT เดือนที่ 2 iAcademy",165,["*Goal Setting Month 2","*SB","*FUFT Week 3: 1EM Vitality, 3EA, 3E2 iSay","FUFT Week 4: How to Series 1–4","New Agent Camp 2 วัน 1 คืน","วิชาการ MD CLUB"]],
+["FUFT เดือนที่ 3 iAcademy",197,["*Goal Set","*SB","*FUFT Week 5: 3ET, iCS, iCare, AIA+, iClaim","วิชาการ MD CLUB"]],
+["ขั้นตอนสิทธิ์การขาย Unitlink",227,["*เข้ากลุ่ม Openchat AIA IC&ULP","*อบรม Basic Investment","*IC Focus (classroom)","*IC Intensive","*Mockup Exam (5E3)","*สอบ IC Paper (AIT/AIMC)","*อบรม Unit link คปภ. 1,500 บาท","*ขึ้นทะเบียน IC กลต. 2,140 บาท","*อบรม ULP Fast start Basic (3E8)","*อบรม ULP Fast start Advance (3E9)","*ส่งเอกสารขึ้นทะเบียนขาย Unit link","*อบรม ULP First App","*อบรม ULP workshop"]]
+];
+let ranks=[{n:"Career Agent",d:"ตัวแทนเริ่มต้น",s:""},{n:"Top Agent",d:"ผลงานเด่น",s:""},{n:"MDRT",d:"ระดับสูงสุด",s:""}];
+let agents=[],view="home",sel=null,pin=localStorage.getItem("aj_pin")||"",token=new URLSearchParams(location.search).get("t");
+const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const DAY=864e5,fmt=d=>d?new Date(d).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"}):"";
+const key=(s,i)=>s+"-"+i,clean=t=>t.replace(/^\*/,"");
+const get=q=>fetch(API+"?"+new URLSearchParams(q)).then(r=>r.json());
+const post=b=>fetch(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(b)}).then(r=>r.json());
+
+function info(a){const done=a.done||{},start=new Date(a.created).getTime(),now=Date.now();let tot=0,dn=0,cur=null,late=null;
+STEPS.forEach((st,si)=>{let c=0;st[2].forEach((_,i)=>{tot++;if(done[key(si,i)]){dn++;c++}});
+const due=start+st[1]*DAY,full=c==st[2].length;
+if(!full&&!cur)cur={si,name:st[0],due,left:st[2].map((t,i)=>[i,t]).filter(([i])=>!done[key(si,i)])};
+if(!full&&due<now&&!late)late={si,name:st[0],due,days:Math.ceil((now-due)/DAY)}});
+return{tot,dn,pct:Math.round(dn/tot*100),cur,late}}
+function remindText(a){const f=info(a);if(!f.cur)return`สวัสดีค่ะ/ครับ คุณ${a.nick||a.name} ผ่านครบทุกขั้นตอนแล้ว ยินดีด้วย!`;
+const must=f.cur.left.filter(([,t])=>t[0]=="*").slice(0,4).map(([,t])=>"• "+clean(t)).join("\n");
+return`สวัสดีค่ะ/ครับ คุณ${a.nick||a.name}\nขั้นตอนตอนนี้: ${f.cur.name}\nกำหนดให้เสร็จภายใน ${fmt(f.cur.due)}${f.late?" (เลยกำหนดแล้ว "+f.late.days+" วัน)":""}\nสิ่งที่ต้องทำ:\n${must||"• "+clean(f.cur.left[0][1])}\nมีอะไรติดขัดบอกพี่ได้เลยนะคะ/ครับ`}
+function copy(id,btn){const a=agents.find(x=>x.id==id),t=remindText(a);
+if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>btn.textContent="คัดลอกแล้ว ✓",()=>prompt("คัดลอกข้อความนี้",t));else prompt("คัดลอกข้อความนี้",t)}
+function chip(a){const f=info(a);return f.late?`<span class="tag late">เลยกำหนด ${f.late.days} วัน</span>`:f.pct==100?`<span class="tag ok">ครบแล้ว</span>`:`<span class="tag ok">ตามแผน</span>`}
+
+function agentCard(a){const f=info(a);return`<div class="card unit" onclick="openAgent('${a.id}')"><div class="row"><h3 class="sp">${esc(a.name)} ${a.nick?`(${esc(a.nick)})`:""}</h3>${chip(a)}</div>
+<div class="mute">${esc(a.unit)} · เริ่ม ${fmt(a.created)} · โทร ${esc(a.phone||"-")}</div><div class="bar"><i style="width:${f.pct}%"></i></div>
+<div>${f.pct}% · ${f.cur?`ขั้นที่ ${f.cur.si+1}: ${esc(f.cur.name)} <span class="mute">(ครบ ${fmt(f.cur.due)})</span>`:"ผ่านครบทุกขั้นตอน"}</div></div>`}
+function home(){const late=agents.filter(a=>info(a).late).sort((x,y)=>info(y).late.days-info(x).late.days);
+let h=`<nav><button onclick="load()">🔄 รีเฟรช</button><button onclick="view='ranks';render()">ขั้นคุณวุฒิตัวแทน</button></nav>`;
+if(late.length)h+=`<div class="alert"><b>⚠ ต้องตามด่วน ${late.length} คน</b><br>`+late.map(a=>`<a href="#" onclick="openAgent('${a.id}');return false">${esc(a.name)}</a> (${esc(a.unit)}) – ${esc(info(a).late.name)} เลย ${info(a).late.days} วัน`).join("<br>")+`</div>`;
+UNITS.forEach(u=>{const l=agents.filter(a=>a.unit==u);h+=`<div class="row" style="margin-top:18px"><h2 class="sp" style="margin:0">${u} <span class="mute">(${l.length} คน)</span></h2><button class="pri" onclick="addForm('${u}')">+ เพิ่มตัวแทนใหม่</button></div><div style="margin-top:10px">${l.map(agentCard).join("")||'<p class="mute">ยังไม่มีตัวแทนในหน่วยนี้</p>'}</div>`});
+return h}
+function addForm(u){const d=$("#dlg");d.innerHTML=`<h2>เพิ่มตัวแทนใหม่ – ${u}</h2>
+<label>ชื่อ-นามสกุล</label><input id="f_name"><label>ชื่อเล่น</label><input id="f_nick"><label>อายุ</label><input id="f_age" type="number" inputmode="numeric">
+<label>วัน เดือน ปีเกิด</label><input id="f_dob" type="date"><label>เบอร์มือถือ</label><input id="f_phone" type="tel">
+<label>วุฒิการศึกษา</label><input id="f_edu"><label>อาชีพเดิม/ปัจจุบัน</label><input id="f_job">
+<div class="row" style="margin-top:16px"><button class="pri" id="sv" onclick="doAdd('${u}')">บันทึก</button><button onclick="$('#dlg').close()">ยกเลิก</button></div>`;d.showModal()}
+async function doAdd(u){const g=i=>$("#f_"+i).value.trim();if(!g("name")){alert("กรุณากรอกชื่อ-นามสกุล");return}
+$("#sv").textContent="กำลังบันทึก…";
+const r=await post({action:"add",pin,agent:{unit:u,name:g("name"),nick:g("nick"),age:g("age"),dob:g("dob"),phone:g("phone"),edu:g("edu"),job:g("job")}});
+if(r.error){alert("บันทึกไม่ได้ ("+r.error+")");return}$("#dlg").close();await load();openAgent(r.id)}
+function openAgent(id){sel=id;view="agent";render();scrollTo(0,0)}
+
+function agentView(a,self){const f=info(a);let h=self?"":`<nav><button onclick="view='home';sel=null;render()">← กลับภาพรวม</button></nav>`;
+h+=`<div class="card"><div class="row"><h2 class="sp" style="margin:0">${esc(a.name)} ${a.nick?`(${esc(a.nick)})`:""}</h2>${chip(a)}</div>
+<div class="mute">${esc(a.unit)} · เพิ่มเข้าระบบ ${fmt(a.created)}${self?"":` · อายุ ${esc(a.age||"-")} · โทร ${esc(a.phone||"-")}<br>${esc(a.edu||"")} ${a.job?"· "+esc(a.job):""}`}</div>
+<div class="bar"><i style="width:${f.pct}%"></i></div><b>ทำแล้ว ${f.dn}/${f.tot} รายการ (${f.pct}%)</b></div>`;
+if(f.cur)h+=`<div class="${f.late?"alert":"card"}"><b>${f.late?"⚠ เลยกำหนดแล้ว "+f.late.days+" วัน":"👉 สิ่งที่ต้องทำตอนนี้"}</b><br>ขั้นที่ ${f.cur.si+1}: ${esc(f.cur.name)} · ครบกำหนด ${fmt(f.cur.due)}<br>`+f.cur.left.slice(0,3).map(([,t])=>"• "+esc(clean(t))).join("<br>")+
+(self?"":`<div style="margin-top:10px"><button onclick="copy('${a.id}',this)">📋 คัดลอกข้อความเตือน (วางใน LINE)</button></div>`)+`</div>`;
+STEPS.forEach((st,si)=>{const c=st[2].filter((_,i)=>(a.done||{})[key(si,i)]).length,due=new Date(a.created).getTime()+st[1]*DAY,full=c==st[2].length;
+h+=`<details class="card" ${f.cur&&f.cur.si==si?"open":""}><summary><div class="sth"><span>ขั้นที่ ${si+1}: ${esc(st[0])}</span><span class="tag ${full?"ok":due<Date.now()?"late":"wait"}">${full?"เสร็จ":c+"/"+st[2].length+" · ครบ "+fmt(due)}</span></div></summary>`+
+st[2].map((t,i)=>{const d=(a.done||{})[key(si,i)];return`<label class="item"><input type="checkbox" ${d?"checked":""} onchange="tick('${a.id}',${si},${i},this.checked)"><span>${t[0]=="*"?'<span class="req">* </span>':""}${esc(clean(t))}${d?` <span class="mute">✓ ${fmt(d)}</span>`:""}</span></label>`}).join("")+`</details>`});
+if(!self)h+=`<div class="card"><b>ลิงก์ส่วนตัวของตัวแทน</b> <span class="mute">(ส่งให้เฉพาะคนนี้ ใครมีลิงก์ก็เปิดได้)</span><br><code style="word-break:break-all">${esc(location.origin+location.pathname)}?t=${a.token}</code><br><button style="margin-top:8px" onclick="navigator.clipboard.writeText('${location.origin+location.pathname}?t=${a.token}');this.textContent='คัดลอกแล้ว ✓'">คัดลอกลิงก์</button></div>
+<button onclick="del('${a.id}')" style="border-color:var(--red);color:var(--red)">ลบรายชื่อนี้</button>`;
+return h}
+async function tick(id,si,i,on){const a=agents.find(x=>x.id==id);a.done=a.done||{};const k=key(si,i);on?a.done[k]=new Date().toISOString():delete a.done[k];
+const r=await post(token?{action:"tick",token,key:k,on}:{action:"tick",pin,id,key:k,on});if(r.error)alert("บันทึกไม่ได้ ลองใหม่อีกครั้ง");render()}
+async function del(id){if(confirm("ลบรายชื่อนี้ถาวร?")){await post({action:"del",pin,id});view="home";sel=null;await load()}}
+
+function ranksView(){let h=`<nav><button onclick="view='home';render()">← ภาพรวม</button></nav><h2>ขั้นคุณวุฒิตัวแทน AIA</h2><div class="grid">`;
+ranks.forEach((r,i)=>{h+=`<div class="card rank"><h3>${i+1}. ${esc(r.n)}</h3><div>${esc(r.d)}</div><div style="margin-top:8px"><b>ฐานเงินเดือน:</b> ${esc(r.s)||'<span class="mute">ยังไม่ระบุ</span>'}</div><button style="margin-top:10px" onclick="editRank(${i})">แก้ไข</button></div>`});
+return h+`</div><button class="pri" onclick="editRank(${ranks.length})">+ เพิ่มขั้น</button>`}
+function editRank(i){const r=ranks[i]||{n:"",d:"",s:""};$("#dlg").innerHTML=`<h2>ขั้นคุณวุฒิ</h2><label>ชื่อขั้น</label><input id="r_n" value="${esc(r.n)}"><label>คำอธิบาย</label><input id="r_d" value="${esc(r.d)}"><label>ฐานเงินเดือน</label><input id="r_s" value="${esc(r.s)}">
+<div class="row" style="margin-top:16px"><button class="pri" onclick="saveRank(${i})">บันทึก</button><button onclick="$('#dlg').close()">ยกเลิก</button>${ranks[i]?`<button onclick="saveRank(${i},1)">ลบ</button>`:""}</div>`;$("#dlg").showModal()}
+async function saveRank(i,rm){const n=ranks.slice();if(rm)n.splice(i,1);else n[i]={n:$("#r_n").value,d:$("#r_d").value,s:$("#r_s").value};await post({action:"ranks",pin,ranks:n});ranks=n;$("#dlg").close();render()}
+
+function login(msg){$("#app").innerHTML=`<div class="card"><h2>เข้าสู่ระบบเจ้าของ</h2>${msg?`<div class="alert">${msg}</div>`:""}<label>รหัส PIN</label><input id="pin" type="password" inputmode="numeric"><div style="margin-top:14px"><button class="pri" onclick="pin=$('#pin').value;localStorage.setItem('aj_pin',pin);load()">เข้าสู่ระบบ</button></div></div>`}
+function render(){const app=$("#app");
+if(token){app.innerHTML=agents[0]?agentView(agents[0],true):"";return}
+const a=agents.find(x=>x.id==sel);
+app.innerHTML=view=="agent"&&a?agentView(a,false):view=="ranks"?ranksView():home()}
+async function load(){
+if(API.startsWith("PASTE")){$("#app").innerHTML='<div class="alert">ยังไม่ได้ตั้งค่า API – ดูคู่มือข้อ 4</div>';return}
+try{
+if(token){const r=await get({action:"get",token});if(r.error){$("#app").innerHTML='<div class="alert">ไม่พบลิงก์นี้ กรุณาขอลิงก์ใหม่จากหัวหน้าหน่วย</div>';return}agents=[r.agent]}
+else{if(!pin){login();return}const r=await get({action:"list",pin});if(r.error){localStorage.removeItem("aj_pin");pin="";login("รหัส PIN ไม่ถูกต้อง");return}agents=r.agents;
+get({action:"ranks"}).then(x=>{if(x.ranks)ranks=x.ranks})}
+render()}catch(e){$("#app").innerHTML='<div class="alert">เชื่อมต่อไม่ได้ ตรวจสอบอินเทอร์เน็ตและลิงก์ API แล้วลองใหม่</div>'}}
+load();
+</script></body></html>
