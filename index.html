@@ -12,6 +12,7 @@ main{max-width:920px;margin:0 auto;padding:16px}
 nav{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
 button{font:inherit;font-weight:600;border:2px solid var(--navy);background:var(--card);color:var(--navy);padding:10px 18px;border-radius:12px;cursor:pointer;min-height:48px}
 .item.lock{opacity:.55;cursor:not-allowed}
+.lnk{display:inline-block;margin-top:6px;padding:4px 12px;border:2px solid var(--navy);border-radius:10px;color:var(--navy);font-size:16px;font-weight:600;text-decoration:none;background:#fff}
 button.sm{font-size:14px;font-weight:400;padding:4px 10px;min-height:32px;border-width:1px;border-radius:8px}
 button.pri{background:var(--red);border-color:var(--red);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
@@ -80,6 +81,9 @@ if(!full&&(!cur||due<cur.due))cur={si,name:st[0],due,left:nd.filter(i=>!done[key
 if(!full&&due<now&&!late)late={si,name:st[0],due,days:Math.ceil((now-due)/DAY)}});
 return{tot,dn,pct:Math.round(dn/tot*100),cur,late}}
 const OPEN_ACADEMY="https://www.aia.co.th/academy",OPEN_AGENT="https://agent.aia.co.th/login/home/agent";
+/* ลิงก์ใต้แต่ละรายการ: "เลขขั้น(เริ่ม0)-เลขรายการ(เริ่ม0)":["ข้อความบนปุ่ม",ลิงก์] เพิ่ม/แก้ได้ที่นี่ */
+const LINKS={"1-2":["เข้าอบรม iPass",OPEN_ACADEMY],"1-3":["เข้าอบรม CCA/MCG",OPEN_ACADEMY],"5-0":["เข้าสู่ระบบตัวแทน AIA",OPEN_AGENT],"5-2":["เข้าเรียนใน iAcademy",OPEN_ACADEMY]};
+const lnk=k=>{const L=LINKS[k];return L?`<br><a class="lnk" href="${ext(L[1])}" target="_blank" rel="noopener">🌐 ${L[0]}</a>`:""};
 const ext=u=>{const ua=navigator.userAgent;if(/Android/i.test(ua))return"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(u)+";end";if(/iPhone|iPad|iPod/i.test(ua))return"x-safari-"+u;return u};
 const inApp=()=>/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
 function linkBox(title,why,u){return`<div class="card" style="border-left:6px solid var(--gold)"><b>${title}</b>${why?`<br><span class="mute">${why}</span>`:""}<div class="row" style="margin-top:10px"><a href="${ext(u)}" target="_blank" rel="noopener" style="text-decoration:none"><button class="pri">🌐 เปิดด้วย Chrome / Safari</button></a><button class="sm" onclick="copyText('${u}',this)">📋 คัดลอกลิงก์</button></div>${inApp()?'<div class="mute" style="margin-top:8px">⚠ ตอนนี้เปิดอยู่ในแอปแชท ถ้าปุ่มไม่พาไปเบราว์เซอร์ ให้กดคัดลอกลิงก์ไปวางใน Chrome หรือ Safari</div>':""}</div>`}
@@ -126,7 +130,7 @@ if(f.cur)h+=`<div class="${f.late?"alert":"card"}"><b>${f.late?"⚠ เลยก
 (self?"":`<div style="margin-top:10px"><button onclick="copy('${a.id}',this)">📋 คัดลอกข้อความเตือน (วางใน LINE)</button></div>`)+`</div>`;
 STEPS.forEach((st,si)=>{const nd=need(si),c=nd.filter(i=>(a.done||{})[key(si,i)]).length,due=new Date(a.created).getTime()+st[1]*DAY,full=c==nd.length;
 h+=`<details class="card" ${f.cur&&f.cur.si==si?"open":""}><summary><div class="sth"><span>ขั้นที่ ${si+1}: ${esc(st[0])}</span><span class="tag ${full?"ok":due<Date.now()?"late":"wait"}">${full?"เสร็จ":c+"/"+nd.length+" บังคับ · ครบ "+fmt(due)}</span></div></summary>`+
-st[2].map((t,i)=>{const d=(a.done||{})[key(si,i)],lk=self&&(d?!canUntick(a,si):!canTick(a,si));return`<label class="item${lk?" lock":""}"><input type="checkbox" ${d?"checked":""} ${lk?"disabled":""} onchange="tick('${a.id}',${si},${i},this.checked)"><span>${t[0]=="*"?'<span class="req">* </span>':""}${esc(clean(t))}${d?` <span class="mute">✓ ${fmt(d)}</span>`:""}${lk&&!d?' <span class="mute">🔒 ทำขั้นก่อนหน้าให้เสร็จก่อน</span>':""}${nextKey(a)==key(si,i)?' <span class="tag late" style="background:#fff0c2;color:#7a5a00">👉 ทำข้อนี้ต่อ</span>':""}</span></label>`}).join("")+`</details>`});
+st[2].map((t,i)=>{const d=(a.done||{})[key(si,i)],lk=self&&(d?!canUntick(a,si):!canTick(a,si));return`<label class="item${lk?" lock":""}"><input type="checkbox" ${d?"checked":""} ${lk?"disabled":""} onchange="tick('${a.id}',${si},${i},this.checked)"><span>${t[0]=="*"?'<span class="req">* </span>':""}${esc(clean(t))}${d?` <span class="mute">✓ ${fmt(d)}</span>`:""}${lk&&!d?' <span class="mute">🔒 ทำขั้นก่อนหน้าให้เสร็จก่อน</span>':""}${lk&&!d?"":lnk(key(si,i))}${nextKey(a)==key(si,i)?' <span class="tag late" style="background:#fff0c2;color:#7a5a00">👉 ทำข้อนี้ต่อ</span>':""}</span></label>`}).join("")+`</details>`});
 if(!self)h+=`<div class="card"><b>ลิงก์ส่วนตัวของตัวแทน</b> <span class="mute">(ส่งให้เฉพาะคนนี้ ใครมีลิงก์ก็เปิดได้)</span><br><code style="word-break:break-all">${esc(location.origin+location.pathname)}?t=${a.token}&openExternalBrowser=1</code><br><button style="margin-top:8px" onclick="navigator.clipboard.writeText('${location.origin+location.pathname}?t=${a.token}&openExternalBrowser=1');this.textContent='คัดลอกแล้ว ✓'">คัดลอกลิงก์</button></div>
 <button onclick="del('${a.id}')" style="border-color:var(--red);color:var(--red)">ลบรายชื่อนี้</button>`;
 return h}
