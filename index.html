@@ -13,6 +13,7 @@ nav{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
 button{font:inherit;font-weight:600;border:2px solid var(--navy);background:var(--card);color:var(--navy);padding:10px 18px;border-radius:12px;cursor:pointer;min-height:48px}
 .item.lock{opacity:.55;cursor:not-allowed}
 .lnk{display:inline-block;margin-top:6px;padding:4px 12px;border:2px solid var(--navy);border-radius:10px;color:var(--navy);font-size:16px;font-weight:600;text-decoration:none;background:#fff}
+button.on{background:var(--navy);color:#fff}
 button.sm{font-size:14px;font-weight:400;padding:4px 10px;min-height:32px;border-width:1px;border-radius:8px}
 button.pri{background:var(--red);border-color:var(--red);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
@@ -59,13 +60,13 @@ const STEPS=[
 ["วิชาบังคับ เรียนภายใน 2 เดือนหลังได้รับรหัส",140,["*14E การรักษาความปลอดภัยทางไซเบอร์ (Cyber)","*17E การรักษาข้อมูลส่วนบุคคล"]]
 ];
 let ranks=[{n:"Career Agent",d:"ตัวแทนเริ่มต้น",s:""},{n:"Top Agent",d:"ผลงานเด่น",s:""},{n:"MDRT",d:"ระดับสูงสุด",s:""}];
-let agents=[],view="home",sel=null,pin=localStorage.getItem("aj_pin")||"",token=new URLSearchParams(location.search).get("t");
+let agents=[],view="home",sel=null,tab="steps",pin=localStorage.getItem("aj_pin")||"",token=new URLSearchParams(location.search).get("t");
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const DAY=864e5,fmt=d=>d?new Date(d).toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"2-digit"}):"";
 const key=(s,i)=>s+"-"+i,clean=t=>t.replace(/^\*/,"");
-const tmo=(u,o)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),30000);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t))};
+const tmo=(u,o,ms=30000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);return fetch(u,{...o,signal:c.signal}).finally(()=>clearTimeout(t))};
 const get=q=>tmo(API+"?"+new URLSearchParams(q)).then(r=>r.json());
-const post=b=>tmo(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(b)}).then(r=>r.json());
+const post=(b,ms)=>tmo(API,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(b)},ms).then(r=>r.json());
 
 const need=si=>{const r=[];STEPS[si][2].forEach((t,i)=>{if(t[0]=="*")r.push(i)});return r.length?r:STEPS[si][2].map((_,i)=>i)};
 const stepDone=(a,si)=>need(si).every(i=>(a.done||{})[key(si,i)]);
@@ -95,6 +96,33 @@ if(!stepDone(a,1))h+=linkBox("🎓 AIA Academy – ใช้เรียน/ส�
 const to6=[0,1,2,3,4].every(i=>stepDone(a,i))||STEPS[5][2].some((_,i)=>(a.done||{})[key(5,i)]);
 if(to6)h+=linkBox("🔑 เข้าระบบตัวแทน AIA","ใช้ตั้งแต่ขั้นที่ 6 (หลังได้รับรหัสตัวแทน) เป็นต้นไป แสดงไว้ตลอดจนจบเส้นทาง",OPEN_AGENT);
 return h}
+
+/* ===== แท็บเอกสาร ===== */
+const QR_EX="https://drive.google.com/file/d/1wR-UWdhZhSjMizTu6lYp6It9gzotI_eE/view?usp=sharing",QR_DL="https://drive.google.com/file/d/1R_BeQ0XZl3vGDup9Dt6k8RcBr5Zh5YLp/view?usp=sharing";
+const DOCS=[["เอกสารขอรับใบอนุญาตตัวแทนประกันชีวิต","คำขอรับใบอนุญาต (ตช.1), ใบรับรองอบรมขรช, ใบตรวจสุขภาพการเงิน (FHC)"],["หลักฐานการลงทะเบียน OIC e-Licensing ของ คปภ.",""],["สำเนาบัตรประชาชน",""],["สำเนาทะเบียนบ้าน",""],["สำเนาหน้าสมุดบัญชี ธ.กรุงศรีฯ",""],["รูปถ่ายขนาด 1 นิ้ว",""],["สำเนาทะเบียนสมรส","ถ้ามี",1],["สำเนาใบเปลี่ยนชื่อ","ถ้ามี",1]];
+const DREQ=DOCS.map((d,i)=>i).filter(i=>!DOCS[i][2]);
+const docOk=a=>DREQ.filter(i=>(a.docs||{})[i]&&a.docs[i].st=="ok").length;
+const DST={"":["ยังไม่ส่ง","wait",""],line:["ส่งทาง LINE แล้ว – รอเจ้าของยืนยัน","late",""],sent:["ส่งแล้ว – รอตรวจ","wait","background:#fff0c2;color:#7a5a00"],ok:["ตรวจแล้ว ✔","ok",""]};
+function docsView(a,self){const D=a.docs||{};
+let h=`<div class="card"><b>📄 เอกสารสำหรับขึ้นทะเบียนใบอนุญาตตัวแทนประกันชีวิต</b><br>ตรวจแล้ว <b>${docOk(a)}/${DREQ.length}</b> รายการบังคับ<div class="bar"><i style="width:${Math.round(docOk(a)/DREQ.length*100)}%"></i></div>
+<div class="mute">ส่งได้ 2 ทาง: กด “อัปโหลดไฟล์” ในหน้านี้ หรือส่งทางไลน์กลุ่ม แล้วกด “ส่งทาง LINE แล้ว”<br>📎 รวบรวมเป็นไฟล์ PDF หรือส่งตัวจริงเท่านั้น<br>🔒 ไฟล์เก็บใน Google Drive ส่วนตัวของสำนักงาน ไม่เปิดสาธารณะ</div>
+<a class="lnk" href="${ext(QR_EX)}" target="_blank" rel="noopener" onclick="go(event,'${QR_EX}')">🌐 ตัวอย่างการเตรียมเอกสารสมัครตัวแทน</a> <a class="lnk" href="${ext(QR_DL)}" target="_blank" rel="noopener" onclick="go(event,'${QR_DL}')">⬇ ดาวน์โหลดเอกสารขอรับใบอนุญาต</a></div>`;
+DOCS.forEach((d,i)=>{const x=D[i]||{},st=x.st||"",t=DST[st];
+h+=`<div class="card"><div class="row"><b class="sp">${i+1}. ${esc(d[0])}${d[2]?' <span class="mute">(ถ้ามี)</span>':""}</b><span class="tag ${t[1]}" style="${t[2]}">${t[0]}</span></div>${d[1]&&!d[2]?`<div class="mute">${esc(d[1])}</div>`:""}${x.at?`<div class="mute">อัปเดต ${fmt(x.at)}${x.by=="agent"?" · โดยตัวแทน":x.by=="owner"?" · โดยเจ้าของ":""}</div>`:""}<div class="row" style="margin-top:8px" id="d${i}">`;
+if(st!="ok"||!self){h+=`<button onclick="pick('${a.id}',${i})">📤 ${x.file||st=="sent"?"ส่งไฟล์ใหม่":"อัปโหลดไฟล์"}</button>`}
+if(self){if(st=="line")h+=`<button class="sm" onclick="setDoc('${a.id}',${i},'')">ยกเลิก “ส่งทาง LINE”</button>`;else if(st!="ok")h+=`<button onclick="setDoc('${a.id}',${i},'line')">📨 ส่งทาง LINE แล้ว</button>`}
+else{if(st!="ok")h+=`<button class="pri" onclick="setDoc('${a.id}',${i},'ok')">✔ ตรวจถูกต้องแล้ว</button>`;if(st!="sent"&&st!="ok")h+=`<button onclick="setDoc('${a.id}',${i},'sent')">📨 รับทาง LINE แล้ว</button>`;if(st)h+=`<button class="sm" onclick="setDoc('${a.id}',${i},'')">ล้างสถานะ</button>`;if(x.url)h+=`<a class="lnk" href="${x.url}" target="_blank" rel="noopener">📂 เปิดไฟล์ใน Drive</a>`}
+h+=`</div></div>`});return h}
+async function setDoc(id,di,st){const r=await post(token?{action:"doc",token,doc:di,st}:{action:"doc",pin,id,doc:di,st});if(r.error)alert(r.error=="locked"?"เจ้าของตรวจแล้ว แก้ไขไม่ได้":"บันทึกไม่ได้ ลองใหม่อีกครั้ง");await load()}
+const readFile=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+async function prep(f){if(f.type=="application/pdf"){if(f.size>3.5e6)throw"ไฟล์ PDF ใหญ่เกิน 3.5MB ลองส่งทางไลน์แทน";const d=await readFile(f);return{mime:f.type,ext:"pdf",b64:d.split(",")[1]}}
+if(!/^image\//.test(f.type))throw"รองรับเฉพาะรูปภาพหรือ PDF";const url=await readFile(f);const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=url});
+const sc=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+return{mime:"image/jpeg",ext:"jpg",b64:c.toDataURL("image/jpeg",.82).split(",")[1]}}
+function pick(id,di){const i=document.createElement("input");i.type="file";i.accept="image/*,application/pdf";i.onchange=()=>doUp(id,di,i.files[0]);i.click()}
+async function doUp(id,di,f){if(!f)return;const box=$("#d"+di);if(box)box.innerHTML='<span class="mute">⏳ กำลังอัปโหลด กรุณารอสักครู่…</span>';
+try{const p=await prep(f);const r=await post(token?{action:"upload",token,doc:di,...p}:{action:"upload",pin,id,doc:di,...p},90000);if(r.error)throw r.error=="locked"?"เจ้าของตรวจแล้ว แก้ไขไม่ได้":"ส่งไม่สำเร็จ ลองใหม่ หรือส่งทางไลน์แทน";await load()}
+catch(e){alert(typeof e=="string"?e:"อ่านไฟล์ไม่ได้ ลองถ่ายรูปใหม่ หรือส่งทางไลน์แทน");await load()}}
 function remindText(a){const f=info(a),n=a.nick||a.name;if(!f.cur)return`🎉 สวัสดีค่ะคุณ${n} ผ่านครบทุกขั้นตอนแล้วนะคะ เก่งมากเลย 🥳👏`;
 const d=Math.ceil((f.cur.due-Date.now())/DAY),when=d<0?`⏰ เลยกำหนดมา ${-d} วันแล้วค่ะ`:d==0?"🎯 วันนี้ครบกำหนดแล้วนะคะ":`🗓 ครบกำหนดอีก ${d} วัน (${fmt(f.cur.due)})`;
 const L=f.cur.left,pick=[...L.filter(([,t])=>t[0]=="*"),...L.filter(([,t])=>t[0]!="*")].slice(0,3).map(([,t])=>"• "+clean(t)).join("\n");
@@ -107,7 +135,7 @@ function chip(a){const f=info(a);return f.late?`<span class="tag late">เลย
 
 function agentCard(a){const f=info(a);return`<div class="card unit" onclick="openAgent('${a.id}')"><div class="row"><h3 class="sp">${esc(a.name)} ${a.nick?`(${esc(a.nick)})`:""}</h3>${chip(a)}</div>
 <div class="mute">${esc(a.unit)} · เริ่ม ${fmt(a.created)} · โทร ${esc(a.phone||"-")}</div><div class="bar"><i style="width:${f.pct}%"></i></div>
-<div>${f.pct}% · ${f.cur?`ขั้นที่ ${f.cur.si+1}: ${esc(f.cur.name)} <span class="mute">(ครบ ${fmt(f.cur.due)})</span>`:"ผ่านครบทุกขั้นตอน"}</div></div>`}
+<div class="mute">📄 เอกสารตรวจแล้ว ${docOk(a)}/${DREQ.length}</div><div>${f.pct}% · ${f.cur?`ขั้นที่ ${f.cur.si+1}: ${esc(f.cur.name)} <span class="mute">(ครบ ${fmt(f.cur.due)})</span>`:"ผ่านครบทุกขั้นตอน"}</div></div>`}
 function home(){const late=agents.filter(a=>info(a).late).sort((x,y)=>info(y).late.days-info(x).late.days);
 let h=`<nav><button onclick="load()">🔄 รีเฟรช</button><button onclick="view='ranks';render()">ขั้นคุณวุฒิตัวแทน</button></nav>`;
 if(late.length)h+=`<div class="alert"><b>⚠ ต้องตามด่วน ${late.length} คน</b><br>`+late.map(a=>`<a href="#" onclick="openAgent('${a.id}');return false">${esc(a.name)}</a> (${esc(a.unit)}) – ${esc(info(a).late.name)} เลย ${info(a).late.days} วัน`).join("<br>")+`<div style="margin-top:10px"><button onclick="copyAll(this)">📋 คัดลอกข้อความเตือนของทุกคนที่ค้าง</button></div></div>`;
@@ -122,12 +150,13 @@ async function doAdd(u){const g=i=>$("#f_"+i).value.trim();if(!g("name")){alert(
 $("#sv").textContent="กำลังบันทึก…";
 const r=await post({action:"add",pin,agent:{unit:u,name:g("name"),nick:g("nick"),age:g("age"),dob:g("dob"),phone:g("phone"),edu:g("edu"),job:g("job")}});
 if(r.error){alert("บันทึกไม่ได้ ("+r.error+")");return}$("#dlg").close();await load();openAgent(r.id)}
-function openAgent(id){sel=id;view="agent";render();scrollTo(0,0)}
+function openAgent(id){sel=id;tab="steps";view="agent";render();scrollTo(0,0)}
 
 function agentView(a,self){const f=info(a);let h=self?"":`<nav><button onclick="view='home';sel=null;render()">← กลับภาพรวม</button></nav>`;
 h+=`<div class="card"><div class="row"><h2 class="sp" style="margin:0">${esc(a.name)} ${a.nick?`(${esc(a.nick)})`:""}</h2>${chip(a)}</div>
 <div class="mute">${esc(a.unit)} · เพิ่มเข้าระบบ ${fmt(a.created)}${self?"":` · อายุ ${esc(a.age||"-")} · โทร ${esc(a.phone||"-")}<br>${esc(a.edu||"")} ${a.job?"· "+esc(a.job):""}`}</div>
 <div class="bar"><i style="width:${f.pct}%"></i></div><b>ทำข้อบังคับแล้ว ${f.dn}/${f.tot} รายการ (${f.pct}%)</b></div>`;
+h+=`<nav><button class="${tab=="steps"?"on":""}" onclick="tab='steps';render()">📋 ขั้นตอน</button><button class="${tab=="docs"?"on":""}" onclick="tab='docs';render()">📄 เอกสาร (${docOk(a)}/${DREQ.length})</button></nav>`;if(tab=="docs")return h+docsView(a,self);
 h+=pinned(a);
 if(f.cur)h+=`<div class="${f.late?"alert":"card"}"><b>${f.late?"⚠ เลยกำหนดแล้ว "+f.late.days+" วัน":"👉 สิ่งที่ต้องทำตอนนี้"}</b><br>ขั้นที่ ${f.cur.si+1}: ${esc(f.cur.name)} · ครบกำหนด ${fmt(f.cur.due)}<br>`+f.cur.left.slice(0,3).map(([,t])=>"• "+esc(clean(t))).join("<br>")+
 (self?"":`<div style="margin-top:10px"><button onclick="copy('${a.id}',this)">📋 คัดลอกข้อความเตือน (วางใน LINE)</button></div>`)+`</div>`;
