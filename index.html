@@ -126,8 +126,12 @@ const sc=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElemen
 return{mime:"image/jpeg",ext:"jpg",b64:c.toDataURL("image/jpeg",.82).split(",")[1]}}
 function pick(id,di){const i=document.createElement("input");i.type="file";i.accept="image/*,application/pdf";i.onchange=()=>doUp(id,di,i.files[0]);i.click()}
 async function doUp(id,di,f){if(!f)return;const box=$("#d"+di);if(box)box.innerHTML='<span class="mute">⏳ กำลังอัปโหลด กรุณารอสักครู่…</span>';
-try{const p=await prep(f);const r=await post(token?{action:"upload",token,doc:di,...p}:{action:"upload",pin,id,doc:di,...p},90000);if(r.error)throw r.error=="locked"?"เจ้าของตรวจแล้ว แก้ไขไม่ได้":"ส่งไม่สำเร็จ ลองใหม่ หรือส่งทางไลน์แทน";await load()}
-catch(e){alert(typeof e=="string"?e:"อ่านไฟล์ไม่ได้ ลองถ่ายรูปใหม่ หรือส่งทางไลน์แทน");await load()}}
+let p,r;
+try{p=await prep(f)}catch(e){alert(typeof e=="string"?e:"อ่านรูปนี้ไม่ได้ ลองถ่ายใหม่ หรือส่งทางไลน์แทน");await load();return}
+try{r=await post(token?{action:"upload",token,doc:di,...p}:{action:"upload",pin,id,doc:di,...p},90000)}
+catch(e){alert(e&&e.name=="AbortError"?"อัปโหลดนานเกินไป สัญญาณอาจช้า ลองใหม่ หรือส่งทางไลน์แทน":"ระบบหลังบ้านตอบกลับผิดปกติ ⚠\n(เจ้าของอาจยังไม่ได้อนุญาตสิทธิ์ Drive หรือยังไม่ได้ Deploy เวอร์ชันใหม่ใน Apps Script)");await load();return}
+if(r.error)alert(r.error=="locked"?"เจ้าของตรวจแล้ว แก้ไขไม่ได้":r.error=="size"?"ไฟล์ใหญ่เกินไป ลองรูปที่เล็กลง หรือส่งทางไลน์แทน":r.error=="bad"?"ระบบหลังบ้านยังเป็นเวอร์ชันเก่า เจ้าของต้อง Deploy เวอร์ชันใหม่ใน Apps Script":"ส่งไม่สำเร็จ (รหัส: "+r.error+")");
+await load()}
 function remindText(a){const f=info(a),n=a.nick||a.name;if(!f.cur)return`🎉 สวัสดีค่ะคุณ${n} ผ่านครบทุกขั้นตอนแล้วนะคะ เก่งมากเลย 🥳👏`;
 const d=Math.ceil((f.cur.due-Date.now())/DAY),when=d<0?`⏰ เลยกำหนดมา ${-d} วันแล้วค่ะ`:d==0?"🎯 วันนี้ครบกำหนดแล้วนะคะ":`🗓 ครบกำหนดอีก ${d} วัน (${fmt(f.cur.due)})`;
 const L=f.cur.left,pick=[...L.filter(([,t])=>t[0]=="*"),...L.filter(([,t])=>t[0]!="*")].slice(0,3).map(([,t])=>"• "+clean(t)).join("\n");
