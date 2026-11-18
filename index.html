@@ -11,6 +11,7 @@ header h1{margin:0;font-size:24px}header small{opacity:.85;font-size:16px}
 main{max-width:920px;margin:0 auto;padding:16px}
 nav{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
 button{font:inherit;font-weight:600;border:2px solid var(--navy);background:var(--card);color:var(--navy);padding:10px 18px;border-radius:12px;cursor:pointer;min-height:48px}
+button.sm{font-size:14px;font-weight:400;padding:4px 10px;min-height:32px;border-width:1px;border-radius:8px}
 button.pri{background:var(--red);border-color:var(--red);color:#fff}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 .card h2,.card h3{margin:0 0 8px;color:var(--navy)}
@@ -75,9 +76,9 @@ return{tot,dn,pct:Math.round(dn/tot*100),cur,late}}
 const OPEN_ACADEMY="https://www.aia.co.th/academy",OPEN_AGENT="https://agent.aia.co.th/login/home/agent";
 const ext=u=>{const ua=navigator.userAgent;if(/Android/i.test(ua))return"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(u)+";end";if(/iPhone|iPad|iPod/i.test(ua))return"x-safari-"+u;return u};
 const inApp=()=>/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
-function linkBox(title,why,u){return`<div class="card" style="border-left:6px solid var(--gold)"><b>${title}</b><br><span class="mute">${why}</span><div class="row" style="margin-top:10px"><a href="${ext(u)}" target="_blank" rel="noopener" style="text-decoration:none"><button class="pri">🌐 เปิดด้วย Chrome / Safari</button></a><button onclick="copyText('${u}',this)">📋 คัดลอกลิงก์</button></div>${inApp()?'<div class="mute" style="margin-top:8px">⚠ ตอนนี้เปิดอยู่ในแอปแชท ถ้าปุ่มไม่พาไปเบราว์เซอร์ ให้กดคัดลอกลิงก์ไปวางใน Chrome หรือ Safari</div>':""}</div>`}
+function linkBox(title,why,u){return`<div class="card" style="border-left:6px solid var(--gold)"><b>${title}</b>${why?`<br><span class="mute">${why}</span>`:""}<div class="row" style="margin-top:10px"><a href="${ext(u)}" target="_blank" rel="noopener" style="text-decoration:none"><button class="pri">🌐 เปิดด้วย Chrome / Safari</button></a><button class="sm" onclick="copyText('${u}',this)">📋 คัดลอกลิงก์</button></div>${inApp()?'<div class="mute" style="margin-top:8px">⚠ ตอนนี้เปิดอยู่ในแอปแชท ถ้าปุ่มไม่พาไปเบราว์เซอร์ ให้กดคัดลอกลิงก์ไปวางใน Chrome หรือ Safari</div>':""}</div>`}
 function pinned(a){let h="";
-if(!stepDone(a,1))h+=linkBox("🎓 AIA Academy – ใช้เรียน/สอบในขั้นที่ 2","แสดงไว้จนกว่าจะทำข้อบังคับ (*) ของขั้นที่ 2 ครบ",OPEN_ACADEMY);
+if(!stepDone(a,1))h+=linkBox("🎓 AIA Academy – ใช้เรียน/สอบในขั้นที่ 2","",OPEN_ACADEMY);
 const to6=[0,1,2,3,4].every(i=>stepDone(a,i))||STEPS[5][2].some((_,i)=>(a.done||{})[key(5,i)]);
 if(to6)h+=linkBox("🔑 เข้าระบบตัวแทน AIA","ใช้ตั้งแต่ขั้นที่ 6 (หลังได้รับรหัสตัวแทน) เป็นต้นไป แสดงไว้ตลอดจนจบเส้นทาง",OPEN_AGENT);
 return h}
