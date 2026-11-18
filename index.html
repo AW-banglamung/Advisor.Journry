@@ -83,10 +83,13 @@ return{tot,dn,pct:Math.round(dn/tot*100),cur,late}}
 const OPEN_ACADEMY="https://www.aia.co.th/academy",OPEN_AGENT="https://agent.aia.co.th/login/home/agent";
 /* ลิงก์ใต้แต่ละรายการ: "เลขขั้น(เริ่ม0)-เลขรายการ(เริ่ม0)":["ข้อความบนปุ่ม",ลิงก์] เพิ่ม/แก้ได้ที่นี่ */
 const LINKS={"1-2":["เข้าอบรม iPass",OPEN_ACADEMY],"1-3":["เข้าอบรม CCA/MCG",OPEN_ACADEMY],"5-0":["เข้าสู่ระบบตัวแทน AIA",OPEN_AGENT],"5-2":["เข้าเรียนใน iAcademy",OPEN_ACADEMY]};
-const lnk=k=>{const L=LINKS[k];return L?`<br><a class="lnk" href="${ext(L[1])}" target="_blank" rel="noopener">🌐 ${L[0]}</a>`:""};
-const ext=u=>{const ua=navigator.userAgent;if(/Android/i.test(ua))return"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(u)+";end";if(/iPhone|iPad|iPod/i.test(ua))return"x-safari-"+u;return u};
+const lnk=k=>{const L=LINKS[k];return L?`<br><a class="lnk" href="${ext(L[1])}" target="_blank" rel="noopener" onclick="go(event,'${L[1]}')">🌐 ${L[0]}</a>`:""};
+const isPad=()=>/iPad/i.test(navigator.userAgent)||(/Macintosh/i.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+const ext=u=>{const ua=navigator.userAgent;if(/Android/i.test(ua))return"intent://"+u.replace(/^https?:\/\//,"")+"#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url="+encodeURIComponent(u)+";end";if(isPad())return"x-safari-"+u;return u};
+const bn=()=>isPad()?"เปิดด้วย Safari":"เปิดด้วย Chrome";
+const go=(e,u)=>{if(/iPhone|iPod/i.test(navigator.userAgent)&&!isPad()){e.preventDefault();location.href=u.replace(/^https:/,"googlechromes:").replace(/^http:/,"googlechrome:");setTimeout(()=>{if(!document.hidden)location.href=u},1500)}};
 const inApp=()=>/Line\/|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
-function linkBox(title,why,u){return`<div class="card" style="border-left:6px solid var(--gold)"><b>${title}</b>${why?`<br><span class="mute">${why}</span>`:""}<div class="row" style="margin-top:10px"><a href="${ext(u)}" target="_blank" rel="noopener" style="text-decoration:none"><button class="pri">🌐 เปิดด้วย Chrome / Safari</button></a><button class="sm" onclick="copyText('${u}',this)">📋 คัดลอกลิงก์</button></div>${inApp()?'<div class="mute" style="margin-top:8px">⚠ ตอนนี้เปิดอยู่ในแอปแชท ถ้าปุ่มไม่พาไปเบราว์เซอร์ ให้กดคัดลอกลิงก์ไปวางใน Chrome หรือ Safari</div>':""}</div>`}
+function linkBox(title,why,u){return`<div class="card" style="border-left:6px solid var(--gold)"><b>${title}</b>${why?`<br><span class="mute">${why}</span>`:""}<div class="row" style="margin-top:10px"><a href="${ext(u)}" target="_blank" rel="noopener" onclick="go(event,'${u}')" style="text-decoration:none"><button class="pri">🌐 ${bn()}</button></a><button class="sm" onclick="copyText('${u}',this)">📋 คัดลอกลิงก์</button></div>${inApp()?'<div class="mute" style="margin-top:8px">⚠ ตอนนี้เปิดอยู่ในแอปแชท ถ้าปุ่มไม่พาไปเบราว์เซอร์ ให้กดคัดลอกลิงก์ไปวางใน Chrome หรือ Safari</div>':""}</div>`}
 function pinned(a){let h="";
 if(!stepDone(a,1))h+=linkBox("🎓 AIA Academy – ใช้เรียน/สอบในขั้นที่ 2","",OPEN_ACADEMY);
 const to6=[0,1,2,3,4].every(i=>stepDone(a,i))||STEPS[5][2].some((_,i)=>(a.done||{})[key(5,i)]);
